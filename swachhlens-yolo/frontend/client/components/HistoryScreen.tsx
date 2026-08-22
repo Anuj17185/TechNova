@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type HistoryItem = {
@@ -11,7 +11,7 @@ type HistoryItem = {
   status: string;
 };
 
-const API_URL = "http://10.5.90.86:8000/api/v1";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.5.90.86:8000/api/v1";
 
 const getStatusStyle = (status: string) => {
   switch (status?.toLowerCase()) {
