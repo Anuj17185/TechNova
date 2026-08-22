@@ -1,4 +1,4 @@
-from fastapi import APIRouter,UploadFile,File,Form
+from fastapi import APIRouter,UploadFile,File,Form,HTTPException
 from app.database import reports_collection
 from datetime import datetime
 from uuid import uuid4
@@ -34,13 +34,16 @@ def create_report(data: dict):
         "status": "submitted"
     }
 @router.get("/reports")
-def get_reports(citizen_id: str):
+def get_reports(citizen_id: str | None = None):
+    query = {}
+    if citizen_id is not None:
+        query["citizen_id"] = citizen_id
 
     reports = list(
         reports_collection.find(
-            {"citizen_id": citizen_id},
+            query,
             {"_id": 0}
-        )
+        ).sort("created_at", -1)
     )
 
     return reports
@@ -92,7 +95,7 @@ async def analyze_report(
         "longitude": longitude,
         "captured_at": captured_at,
         "comment": comment,
-        "status": "draft",
+        "status": "submitted",
         "ai_category": ai_category,
         "ai_confidence": ai_confidence,
         "detections": detections,
@@ -105,7 +108,7 @@ async def analyze_report(
 
     return {
         "report_id": report_id,
-        "status": "draft",
+        "status": "submitted",
         "ai_category": ai_category,
         "ai_confidence": ai_confidence,
         "detections": detections,
@@ -141,4 +144,26 @@ def submit_report(report_id: str, data: SubmitReport):
     return {
         "report_id": report_id,
         "status": "submitted"
+    }
+
+class UpdateReportStatus(BaseModel):
+    status: str
+
+
+@router.patch("/reports/{report_id}/status")
+def update_report_status(report_id: str, data: UpdateReportStatus):
+    if data.status not in {"working", "completed"}:
+        raise HTTPException(status_code=400, detail="Status must be working or completed")
+
+    result = reports_collection.update_one(
+        {"report_id": report_id},
+        {"$set": {"status": data.status}}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    return {
+        "report_id": report_id,
+        "status": data.status
     }
