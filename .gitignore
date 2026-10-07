@@ -16,3 +16,7 @@ dist-ssr/
 
 # Environment variables
 .env
+*.env
+**/.env
+swachhlens-yolo/backend/storage/annotated/*
+swachhlens-yolo/backend/storage/originals/*
